@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "agtmls-lsp"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.86.0"
+license = "MIT OR Apache-2.0"
+description = "Language Server Protocol implementation for AgtMLS agent skills: live security diagnostics, frontmatter completion, and capability-narrowing code actions"
+repository = "https://github.com/sebastienrousseau/agtmls-lsp"
+homepage = "https://github.com/sebastienrousseau/agtmls-lsp"
+documentation = "https://docs.rs/agtmls-lsp"
+readme = "README.md"
+keywords = ["lsp", "language-server", "agent", "skills", "security"]
+categories = ["development-tools", "text-editors"]
+authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
+
+[lib]
+name = "agtmls_lsp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "agtmls-lsp"
+path = "src/main.rs"
+
+[dependencies]
+# Strict lockstep. A diagnostic that disagrees with the CLI about the same
+# file is worse than no diagnostic: the author fixes what the editor shows and
+# CI fails anyway.
+agtmls-core = { git = "https://github.com/sebastienrousseau/agtmls-core", rev = "14c48d19ed706b89bbd4eac3ecf631ba09ea2f8f" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
