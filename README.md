@@ -28,8 +28,17 @@ editor shows and the build fails anyway.
 cargo install agtmls-lsp
 ```
 
+### VS Code
+
+The extension in [`editors/vscode`](editors/vscode) spawns the server and
+nothing else — every rule, code action and severity decision stays in the
+server, which is the same engine the CLI runs. An editor that reimplements
+any of it will eventually disagree with CI, and the author will believe the
+editor.
+
+### Neovim
+
 ```lua
--- Neovim
 require('lspconfig.configs').agtmls = {
   default_config = {
     cmd = { 'agtmls-lsp' },

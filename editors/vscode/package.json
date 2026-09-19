@@ -1,0 +1,32 @@
+{
+  "name": "agtmls",
+  "displayName": "AgtMLS — agent skill security",
+  "description": "Live security diagnostics for agent skills: prompt injection, invisible-character smuggling, and capability escalation.",
+  "version": "0.0.1",
+  "publisher": "sebastienrousseau",
+  "license": "Apache-2.0 OR MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/sebastienrousseau/agtmls-lsp.git" },
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Linters", "Programming Languages"],
+  "keywords": ["agent", "skills", "security", "prompt-injection", "claude"],
+  "activationEvents": ["workspaceContains:**/SKILL.md"],
+  "main": "./src/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "AgtMLS",
+      "properties": {
+        "agtmls.serverPath": {
+          "type": "string",
+          "default": "agtmls-lsp",
+          "description": "Path to the agtmls-lsp binary."
+        },
+        "agtmls.specPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to an agtmls-spec checkout. Without one the server reports that files are unchecked rather than clean."
+        }
+      }
+    }
+  },
+  "dependencies": { "vscode-languageclient": "^9.0.1" }
+}

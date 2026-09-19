@@ -13,6 +13,7 @@
 - Code actions: remove invisible characters, narrow `allowed-tools`, create
   `metadata.json`. No action widens a safety policy.
 - Document symbols.
+- A VS Code client in `editors/vscode`, deliberately thin.
 - An unarmed server publishes a warning rather than an empty diagnostic list.
   An empty list means clean, and unchecked is not clean.
 - Twelve handler tests, including that the capability fix never keeps an
