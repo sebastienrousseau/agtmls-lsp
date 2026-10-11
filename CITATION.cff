@@ -9,4 +9,4 @@ authors:
 repository-code: "https://github.com/sebastienrousseau/agtmls-lsp"
 abstract: "Language Server Protocol implementation for AgtMLS agent skills."
 license: "Apache-2.0 OR MIT"
-version: 0.0.1
+version: 0.0.2
