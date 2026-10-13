@@ -5,7 +5,7 @@
 name = "agtmls-lsp"
 version = "0.0.3"
 edition = "2024"
-rust-version = "1.86.0"
+rust-version = "1.89.0"
 license = "MIT OR Apache-2.0"
 description = "Language Server Protocol implementation for AgtMLS agent skills: live security diagnostics, frontmatter completion, and capability-narrowing code actions"
 repository = "https://github.com/sebastienrousseau/agtmls-lsp"
