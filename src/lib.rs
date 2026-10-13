@@ -218,17 +218,17 @@ impl Server {
         // Structural rules need the skill, not the document. Only SKILL.md
         // has siblings worth reading, and reading them from the editor's
         // buffer is not possible, so the on-disk metadata is used.
-        if name == "SKILL.md" {
-            if let Some(dir) = uri.strip_prefix("file://").map(std::path::PathBuf::from) {
-                let mut files = skill::SkillFiles::new();
-                files.insert("SKILL.md".to_owned(), text.to_owned());
-                if let Some(parent) = dir.parent() {
-                    if let Ok(meta) = std::fs::read_to_string(parent.join("metadata.json")) {
-                        files.insert("metadata.json".to_owned(), meta);
-                    }
-                }
-                findings.extend(skill::audit_skill(&files));
+        if name == "SKILL.md"
+            && let Some(dir) = uri.strip_prefix("file://").map(std::path::PathBuf::from)
+        {
+            let mut files = skill::SkillFiles::new();
+            files.insert("SKILL.md".to_owned(), text.to_owned());
+            if let Some(parent) = dir.parent()
+                && let Ok(meta) = std::fs::read_to_string(parent.join("metadata.json"))
+            {
+                files.insert("metadata.json".to_owned(), meta);
             }
+            findings.extend(skill::audit_skill(&files));
         }
 
         findings

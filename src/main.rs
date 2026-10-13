@@ -90,10 +90,10 @@ fn main() -> ExitCode {
         let Ok(message) = serde_json::from_str::<serde_json::Value>(&payload) else {
             continue; // a malformed frame is not worth killing the session over
         };
-        if let Some(reply) = server.handle(&message) {
-            if write_message(&mut stdout, &reply.to_string()).is_err() {
-                break;
-            }
+        if let Some(reply) = server.handle(&message)
+            && write_message(&mut stdout, &reply.to_string()).is_err()
+        {
+            break;
         }
         if server.shutting_down {
             break;
