@@ -3,6 +3,31 @@
 
 # Changelog
 
+## [0.0.3] - Unreleased
+
+### Changed
+
+- `KEYS.asc` trusts a second maintainer signing key,
+  `SHA256:kIOPAavp1TCEauTr1tTIN3cv+tSs6F9m/4lZjuM9tqk`, so release tags can
+  be signed on either maintainer machine. Each key line now carries its
+  fingerprint for out-of-band checks.
+- **The MSRV is now Rust 1.89.0** (was 1.86.0), the floor shared by the
+  portfolio's Rust repositories. `rust-version` and the README badge move
+  together. Three nested `if let` blocks became let chains, which clippy
+  asks for once the floor is past 1.88.
+
+### Fixed
+
+- **Message framing no longer trusts the client for an allocation size.**
+  A `Content-Length` of `18446744073709551615` used to panic the server
+  (`capacity overflow`), and any large value allocated that many bytes. A
+  body over 16 MiB is now skipped unbuffered and refused, and a header line
+  over 8 KiB is refused. A missing or non-numeric `Content-Length` is
+  refused rather than read as zero, a body that is not UTF-8 is refused
+  rather than decoded lossily, and the header name is matched
+  case-insensitively as the base protocol requires. Each refused frame is
+  answered with a JSON-RPC parse error (`-32700`) and the session goes on.
+
 ## [0.0.2] - 2026-10-11
 
 ### Added

@@ -9,11 +9,12 @@
 
 #![forbid(unsafe_code)]
 
-// BufRead: Read, so read_exact is already in scope.
 use std::io::{self, BufRead, Write};
 use std::process::ExitCode;
 
 use agtmls_lsp::Server;
+use agtmls_lsp::framing::{read_message, write_message};
+use serde_json::{Value, json};
 
 const HELP: &str = "\
 agtmls-lsp — Language Server Protocol server for AgtMLS agent skills.
@@ -31,33 +32,41 @@ ENVIRONMENT:
 It speaks Content-Length-framed JSON-RPC over stdio and is not meant to be
 used interactively. Configure your editor to spawn it.";
 
-/// Read one `Content-Length`-framed message.
-fn read_message(stdin: &mut impl BufRead) -> io::Result<Option<String>> {
-    let mut length = 0usize;
+/// Serve messages until end of input, a write failure, or `shutdown`.
+///
+/// A frame the reader refuses is answered with a JSON-RPC parse error
+/// (`-32700`, `id: null`) and the session carries on: one bad frame from a
+/// buggy client is not worth killing the editor's language server over.
+fn serve(server: &mut Server, reader: &mut impl BufRead, stdout: &mut impl Write) {
     loop {
-        let mut header = String::new();
-        if stdin.read_line(&mut header)? == 0 {
-            return Ok(None); // clean EOF: the editor closed the pipe
+        let payload = match read_message(reader) {
+            Ok(Some(payload)) => payload,
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+                eprintln!("agtmls-lsp: refused a frame: {error}");
+                let reply = json!({
+                    "jsonrpc": "2.0",
+                    "id": null,
+                    "error": { "code": -32700, "message": format!("parse error: {error}") },
+                });
+                if write_message(stdout, &reply.to_string()).is_err() {
+                    return;
+                }
+                continue;
+            }
+            Ok(None) | Err(_) => return,
+        };
+        let Ok(message) = serde_json::from_str::<Value>(&payload) else {
+            continue; // a malformed frame is not worth killing the session over
+        };
+        if let Some(reply) = server.handle(&message)
+            && write_message(stdout, &reply.to_string()).is_err()
+        {
+            return;
         }
-        let header = header.trim_end();
-        if header.is_empty() {
-            break; // blank line ends the headers
-        }
-        if let Some(value) = header.strip_prefix("Content-Length:") {
-            length = value.trim().parse().unwrap_or(0);
+        if server.shutting_down {
+            return;
         }
     }
-    if length == 0 {
-        return Ok(Some(String::new()));
-    }
-    let mut buffer = vec![0u8; length];
-    stdin.read_exact(&mut buffer)?;
-    Ok(Some(String::from_utf8_lossy(&buffer).into_owned()))
-}
-
-fn write_message(stdout: &mut impl Write, payload: &str) -> io::Result<()> {
-    write!(stdout, "Content-Length: {}\r\n\r\n{payload}", payload.len())?;
-    stdout.flush()
 }
 
 fn main() -> ExitCode {
@@ -80,24 +89,6 @@ fn main() -> ExitCode {
     }
 
     let stdin = io::stdin();
-    let mut reader = stdin.lock();
-    let mut stdout = io::stdout();
-
-    while let Ok(Some(payload)) = read_message(&mut reader) {
-        if payload.is_empty() {
-            continue;
-        }
-        let Ok(message) = serde_json::from_str::<serde_json::Value>(&payload) else {
-            continue; // a malformed frame is not worth killing the session over
-        };
-        if let Some(reply) = server.handle(&message) {
-            if write_message(&mut stdout, &reply.to_string()).is_err() {
-                break;
-            }
-        }
-        if server.shutting_down {
-            break;
-        }
-    }
+    serve(&mut server, &mut stdin.lock(), &mut io::stdout());
     ExitCode::SUCCESS
 }
