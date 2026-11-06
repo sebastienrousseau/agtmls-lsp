@@ -9,11 +9,11 @@
 
 #![forbid(unsafe_code)]
 
-// BufRead: Read, so read_exact is already in scope.
-use std::io::{self, BufRead, Write};
+use std::io;
 use std::process::ExitCode;
 
 use agtmls_lsp::Server;
+use agtmls_lsp::framing::{read_message, write_message};
 
 const HELP: &str = "\
 agtmls-lsp — Language Server Protocol server for AgtMLS agent skills.
@@ -30,35 +30,6 @@ ENVIRONMENT:
 
 It speaks Content-Length-framed JSON-RPC over stdio and is not meant to be
 used interactively. Configure your editor to spawn it.";
-
-/// Read one `Content-Length`-framed message.
-fn read_message(stdin: &mut impl BufRead) -> io::Result<Option<String>> {
-    let mut length = 0usize;
-    loop {
-        let mut header = String::new();
-        if stdin.read_line(&mut header)? == 0 {
-            return Ok(None); // clean EOF: the editor closed the pipe
-        }
-        let header = header.trim_end();
-        if header.is_empty() {
-            break; // blank line ends the headers
-        }
-        if let Some(value) = header.strip_prefix("Content-Length:") {
-            length = value.trim().parse().unwrap_or(0);
-        }
-    }
-    if length == 0 {
-        return Ok(Some(String::new()));
-    }
-    let mut buffer = vec![0u8; length];
-    stdin.read_exact(&mut buffer)?;
-    Ok(Some(String::from_utf8_lossy(&buffer).into_owned()))
-}
-
-fn write_message(stdout: &mut impl Write, payload: &str) -> io::Result<()> {
-    write!(stdout, "Content-Length: {}\r\n\r\n{payload}", payload.len())?;
-    stdout.flush()
-}
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();

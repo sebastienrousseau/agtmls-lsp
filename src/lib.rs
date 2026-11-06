@@ -20,6 +20,7 @@
 
 pub mod actions;
 pub mod completion;
+pub mod framing;
 
 use std::collections::HashMap;
 
