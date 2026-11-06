@@ -9,11 +9,12 @@
 
 #![forbid(unsafe_code)]
 
-use std::io;
+use std::io::{self, BufRead, Write};
 use std::process::ExitCode;
 
 use agtmls_lsp::Server;
 use agtmls_lsp::framing::{read_message, write_message};
+use serde_json::{Value, json};
 
 const HELP: &str = "\
 agtmls-lsp — Language Server Protocol server for AgtMLS agent skills.
@@ -30,6 +31,43 @@ ENVIRONMENT:
 
 It speaks Content-Length-framed JSON-RPC over stdio and is not meant to be
 used interactively. Configure your editor to spawn it.";
+
+/// Serve messages until end of input, a write failure, or `shutdown`.
+///
+/// A frame the reader refuses is answered with a JSON-RPC parse error
+/// (`-32700`, `id: null`) and the session carries on: one bad frame from a
+/// buggy client is not worth killing the editor's language server over.
+fn serve(server: &mut Server, reader: &mut impl BufRead, stdout: &mut impl Write) {
+    loop {
+        let payload = match read_message(reader) {
+            Ok(Some(payload)) => payload,
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => {
+                eprintln!("agtmls-lsp: refused a frame: {error}");
+                let reply = json!({
+                    "jsonrpc": "2.0",
+                    "id": null,
+                    "error": { "code": -32700, "message": format!("parse error: {error}") },
+                });
+                if write_message(stdout, &reply.to_string()).is_err() {
+                    return;
+                }
+                continue;
+            }
+            Ok(None) | Err(_) => return,
+        };
+        let Ok(message) = serde_json::from_str::<Value>(&payload) else {
+            continue; // a malformed frame is not worth killing the session over
+        };
+        if let Some(reply) = server.handle(&message)
+            && write_message(stdout, &reply.to_string()).is_err()
+        {
+            return;
+        }
+        if server.shutting_down {
+            return;
+        }
+    }
+}
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -51,24 +89,6 @@ fn main() -> ExitCode {
     }
 
     let stdin = io::stdin();
-    let mut reader = stdin.lock();
-    let mut stdout = io::stdout();
-
-    while let Ok(Some(payload)) = read_message(&mut reader) {
-        if payload.is_empty() {
-            continue;
-        }
-        let Ok(message) = serde_json::from_str::<serde_json::Value>(&payload) else {
-            continue; // a malformed frame is not worth killing the session over
-        };
-        if let Some(reply) = server.handle(&message)
-            && write_message(&mut stdout, &reply.to_string()).is_err()
-        {
-            break;
-        }
-        if server.shutting_down {
-            break;
-        }
-    }
+    serve(&mut server, &mut stdin.lock(), &mut io::stdout());
     ExitCode::SUCCESS
 }
