@@ -200,7 +200,9 @@ impl Server {
     /// Findings for a document, as LSP diagnostics.
     #[must_use]
     pub fn diagnostics(&self, uri: &str, text: &str) -> Vec<Value> {
-        let Some(analyzer) = &self.analyzer else {
+        // The analyzer is built from the rule set, so both are present or
+        // neither is.
+        let (Some(analyzer), Some(rules)) = (&self.analyzer, &self.rules) else {
             // Reported once, as a warning on line 1, rather than silently
             // publishing nothing: an empty diagnostic list means "clean".
             return vec![json!({
@@ -229,7 +231,7 @@ impl Server {
             {
                 files.insert("metadata.json".to_owned(), meta);
             }
-            findings.extend(skill::audit_skill(&files));
+            findings.extend(skill::audit_skill(rules, &files));
         }
 
         findings

@@ -3,10 +3,15 @@
 
 # Changelog
 
-## [0.0.3] - 2026-11-06
+## [0.0.3] - 2026-11-07
 
 ### Changed
 
+- **`agtmls-core` comes from crates.io**, pinned exactly at `=0.0.3`
+  (was a git revision), so this crate can be published and a consumer can
+  audit the dependency from the registry. Structural skill checks now run
+  against the loaded rule set, as `agtmls-core` 0.0.3 requires; a server
+  without one still reports that the file is unchecked.
 - `KEYS.asc` trusts a second maintainer signing key,
   `SHA256:kIOPAavp1TCEauTr1tTIN3cv+tSs6F9m/4lZjuM9tqk`, so release tags can
   be signed on either maintainer machine. Each key line now carries its

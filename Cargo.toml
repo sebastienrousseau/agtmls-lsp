@@ -28,7 +28,7 @@ path = "src/main.rs"
 # Strict lockstep. A diagnostic that disagrees with the CLI about the same
 # file is worse than no diagnostic: the author fixes what the editor shows and
 # CI fails anyway.
-agtmls-core = { git = "https://github.com/sebastienrousseau/agtmls-core", rev = "14c48d19ed706b89bbd4eac3ecf631ba09ea2f8f" }
+agtmls-core = "=0.0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
